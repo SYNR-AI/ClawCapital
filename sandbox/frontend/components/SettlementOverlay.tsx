@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const INITIAL_VALUE = 100_000_000 + 500_000 * 253; // $226.5M
+const INITIAL_VALUE = 100_000_000 + 500_000 * 245.79; // $222.9M
 
 interface SettlementProps {
   portfolio: {
@@ -31,6 +31,12 @@ const SettlementOverlay: React.FC<SettlementProps> = ({
   const pnlPct = (finalPnl / INITIAL_VALUE) * 100;
   const pnlPositive = finalPnl >= 0;
   const pnlColor = pnlPositive ? "#4ade80" : "#f87171";
+
+  console.log(
+    `[Settlement] price=$${settlementPrice} cash=$${(portfolio.cash / 1e6).toFixed(2)}M holdings=`,
+    portfolio.holdings,
+    `holdingsValue=$${(holdingsValue / 1e6).toFixed(2)}M total=$${(totalValue / 1e6).toFixed(2)}M INITIAL=$${(INITIAL_VALUE / 1e6).toFixed(2)}M PnL=$${(finalPnl / 1e6).toFixed(2)}M (${pnlPct.toFixed(2)}%)`,
+  );
 
   // Vibrate on mount
   useEffect(() => {
@@ -81,7 +87,7 @@ const SettlementOverlay: React.FC<SettlementProps> = ({
     <div
       className="absolute inset-0 z-50 flex flex-col items-center justify-center"
       style={{
-        backgroundColor: "rgba(0,0,0,0.92)",
+        backgroundColor: "#000",
         animation: phase === "shake" ? "settlementShake 0.08s infinite" : undefined,
       }}
     >

@@ -2,7 +2,7 @@ import React from "react";
 import type { ChatState } from "../hooks/useChat";
 import Clock from "./Clock";
 
-const INITIAL_VALUE = 100_000_000 + 500_000 * 253; // $226.5M
+const INITIAL_VALUE = 100_000_000 + 500_000 * 245.79; // $222.9M
 
 interface WallSectionProps {
   displayText: string;

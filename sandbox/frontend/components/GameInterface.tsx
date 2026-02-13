@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useChat } from "../hooks/useChat";
 import { useGateway } from "../hooks/useGateway";
 import intro from "../intro.json";
-import messages from "../messages.json";
+import gameData from "../messages.json";
 import initialPortfolio from "../portfolio.json";
 import { ANALYST_PROMPT } from "../prompts";
 import DeskSection from "./DeskSection";
@@ -51,6 +51,7 @@ interface GameInterfaceProps {
 
 const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
   const gateway = useGateway(url);
+  const { messages, settlement } = gameData;
   const chat = useChat(gateway);
   const [messageIndex, setMessageIndex] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
@@ -114,23 +115,24 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
     }
     if (phase === "processing") {
       const trade = parseTrade(chat.reply);
+      console.log(`[Game] msg#${messageIndexRef.current} lobster done → parsed trade:`, trade);
       setPendingTrade(trade);
       setPhase("awaiting_action");
     }
   }, [chat.chatState, phase, chat.reply]);
 
-  const showTransitionThenSend = useCallback((index: number, feedback?: "agree" | "disagree") => {
+  const sendAndShowTransition = useCallback((index: number, feedback?: "agree" | "disagree") => {
+    sendMessageRef.current(index, feedback);
     const m = messages[index];
     setTransition({ date: m.date, time: m.time, duration: 1500 });
     setTimeout(() => {
       setTransition(null);
-      sendMessageRef.current(index, feedback);
     }, 1500);
   }, []);
 
   const handleStart = () => {
     setShowIntro(false);
-    showTransitionThenSend(0);
+    sendAndShowTransition(0);
   };
 
   const advanceToNext = useCallback(
@@ -140,7 +142,11 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
 
       if (currentIdx >= messages.length - 1) {
         // Last message — long transition then settlement
+        console.log(
+          `[Game] LAST MSG msg#${currentIdx} → settlement (messages.length=${messages.length})`,
+        );
         setPhase("idle");
+        chat.clear();
         const label = isChinese ? "一个月后..." : "ONE MONTH LATER...";
         setTransition({ date: "2025-11-29", time: "", label, duration: 3500, hold: true });
         setTimeout(() => {
@@ -152,14 +158,17 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
 
       const nextIdx = currentIdx + 1;
       setMessageIndex(nextIdx);
-      showTransitionThenSend(nextIdx, feedback);
+      sendAndShowTransition(nextIdx, feedback);
     },
-    [showTransitionThenSend],
+    [sendAndShowTransition, chat],
   );
 
   const executeTrade = useCallback((trade: Trade) => {
-    const currentMsg = messages[messageIndexRef.current] as any;
-    const price: number = currentMsg.googPrice ?? 253;
+    const currentMsg = messages[messageIndexRef.current];
+    const price = currentMsg.tradePrice;
+    console.log(
+      `[Trade] EXECUTE msg#${messageIndexRef.current} ${trade.side} ${trade.qty} ${trade.symbol} @ $${price} (tradePrice=${currentMsg.tradePrice}, price=${currentMsg.price})`,
+    );
 
     setPortfolio((prev) => {
       const next: Portfolio = {
@@ -202,6 +211,10 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
         date: currentMsg.date,
       });
 
+      const goog = next.holdings.find((h) => h.symbol === "GOOG");
+      console.log(
+        `[Trade] RESULT cash=$${(next.cash / 1e6).toFixed(2)}M GOOG=${goog ? `${(goog.qty / 1000).toFixed(2)}K@$${goog.avgPrice.toFixed(2)}` : "none"} trades=${next.trades.length}`,
+      );
       return next;
     });
   }, []);
@@ -211,6 +224,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
     if (phase !== "awaiting_action") {
       return;
     }
+    console.log(`[Game] ACCEPT msg#${messageIndexRef.current} pendingTrade:`, pendingTrade);
     if (pendingTrade) {
       executeTrade(pendingTrade);
     }
@@ -222,6 +236,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
     if (phase !== "awaiting_action") {
       return;
     }
+    console.log(`[Game] REJECT msg#${messageIndexRef.current}`);
     advanceToNext("disagree");
   }, [phase, advanceToNext]);
 
@@ -255,7 +270,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
         scrollOpen={scrollOpen}
         onScrollToggle={setScrollOpen}
         portfolio={portfolio}
-        currentPrice={(msg as any).googPrice ?? 253}
+        currentPrice={msg.price}
       />
       {!scrollOpen && (
         <DeskSection onGreen={handleGreen} onRed={handleRed} disabled={buttonsDisabled} />
@@ -383,10 +398,11 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
       `}</style>
 
       {/* Settlement overlay */}
+      {showSettlement && console.log(`[Settlement] rendering: settlementPrice=${settlement.price}`)}
       {showSettlement && (
         <SettlementOverlay
           portfolio={portfolio}
-          settlementPrice={(messages[messages.length - 1] as any).googPrice ?? 272.3}
+          settlementPrice={settlement.price}
           isChinese={isChinese}
           onPlayAgain={handlePlayAgain}
         />
