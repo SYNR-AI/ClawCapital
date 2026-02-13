@@ -2,6 +2,8 @@ import React from "react";
 import type { ChatState } from "../hooks/useChat";
 import Clock from "./Clock";
 
+const INITIAL_VALUE = 100_000_000 + 500_000 * 253; // $226.5M
+
 interface WallSectionProps {
   displayText: string;
   chatState: ChatState;
@@ -15,6 +17,7 @@ interface WallSectionProps {
     holdings: { symbol: string; qty: number; avgPrice: number }[];
     trades: { side: string; symbol: string; qty: number; price: number; date: string }[];
   };
+  currentPrice: number;
 }
 
 const WallSection: React.FC<WallSectionProps> = ({
@@ -26,6 +29,7 @@ const WallSection: React.FC<WallSectionProps> = ({
   scrollOpen,
   onScrollToggle,
   portfolio,
+  currentPrice,
 }) => {
   const showBeam = !!displayText;
   const isLoading = chatState === "sending";
@@ -144,83 +148,123 @@ const WallSection: React.FC<WallSectionProps> = ({
                 right: "18%",
               }}
             >
-              <div
-                style={{
-                  fontFamily: "system-ui, -apple-system, sans-serif",
-                  fontWeight: 500,
-                  color: "#5a4630",
-                }}
-              >
-                <h3
-                  className="text-center font-bold mb-2"
-                  style={{ fontSize: isChinese ? "14px" : "10px" }}
-                >
-                  {isChinese ? "- 持仓总览 -" : "- PORTFOLIO -"}
-                </h3>
-                <div
-                  className="mb-3"
-                  style={{ fontSize: isChinese ? "12px" : "8px", lineHeight: "1.8" }}
-                >
-                  <div className="flex justify-between">
-                    <span>{isChinese ? "现金" : "Cash"}</span>
-                    <span>${(portfolio.cash / 1e6).toFixed(2)}M</span>
-                  </div>
-                  {portfolio.holdings.length > 0 ? (
-                    portfolio.holdings.map((h: any, i: number) => (
-                      <div key={i} className="flex justify-between">
-                        <span>
-                          {h.symbol} ×{h.qty}
-                        </span>
-                        <span>${((h.qty * h.avgPrice) / 1e6).toFixed(2)}M</span>
-                      </div>
-                    ))
-                  ) : (
-                    <div
-                      className="text-center opacity-60"
-                      style={{ fontSize: isChinese ? "11px" : "7px" }}
-                    >
-                      {isChinese ? "暂无持仓" : "No holdings"}
-                    </div>
-                  )}
-                </div>
+              {(() => {
+                const holdingsValue = portfolio.holdings.reduce(
+                  (sum, h) => sum + h.qty * currentPrice,
+                  0,
+                );
+                const totalValue = portfolio.cash + holdingsValue;
+                const pnl = totalValue - INITIAL_VALUE;
+                const pnlPct = (pnl / INITIAL_VALUE) * 100;
+                const pnlPositive = pnl >= 0;
+                const baseFontSize = isChinese ? "12px" : "8px";
+                const headerSize = isChinese ? "14px" : "10px";
 
-                <div
-                  className="border-t pt-2"
-                  style={{ borderColor: "#b8a080", fontSize: isChinese ? "12px" : "8px" }}
-                >
-                  <h3
-                    className="text-center font-bold mb-2"
-                    style={{ fontSize: isChinese ? "14px" : "10px" }}
+                return (
+                  <div
+                    style={{
+                      fontFamily: "system-ui, -apple-system, sans-serif",
+                      fontWeight: 500,
+                      color: "#5a4630",
+                    }}
                   >
-                    {isChinese ? "- 交易记录 -" : "- TRADES -"}
-                  </h3>
-                  {portfolio.trades.length > 0 ? (
-                    <div style={{ lineHeight: "1.8" }}>
-                      {portfolio.trades.map((t: any, i: number) => (
-                        <div key={i} className="mb-1">
-                          <div className="flex justify-between">
-                            <span style={{ fontWeight: "bold" }}>
-                              {t.side} {t.symbol}
-                            </span>
-                            <span>{t.date}</span>
-                          </div>
-                          <div className="flex justify-between opacity-80">
-                            <span>×{t.qty}</span>
-                            <span>@${t.price}</span>
-                          </div>
-                        </div>
-                      ))}
+                    {/* P&L — prominent */}
+                    <div className="text-center mb-3">
+                      <div style={{ fontSize: baseFontSize, opacity: 0.7 }}>
+                        {isChinese ? "当前收益" : "P&L"}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "24px",
+                          fontWeight: 800,
+                          color: pnlPositive ? "#2d7a2d" : "#b91c1c",
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {pnlPositive ? "+" : ""}${(pnl / 1e6).toFixed(2)}M
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: pnlPositive ? "#2d7a2d" : "#b91c1c",
+                        }}
+                      >
+                        {pnlPositive ? "+" : ""}
+                        {pnlPct.toFixed(2)}%
+                      </div>
                     </div>
-                  ) : (
+
+                    {/* Holdings */}
+                    <h3 className="text-center font-bold mb-1" style={{ fontSize: headerSize }}>
+                      {isChinese ? "- 持仓 -" : "- HOLDINGS -"}
+                    </h3>
+                    <div className="mb-2" style={{ fontSize: baseFontSize, lineHeight: "1.8" }}>
+                      <div className="flex justify-between">
+                        <span>{isChinese ? "现金" : "Cash"}</span>
+                        <span>${(portfolio.cash / 1e6).toFixed(2)}M</span>
+                      </div>
+                      {portfolio.holdings.map((h: any, i: number) => {
+                        const holdingPnl = (currentPrice - h.avgPrice) * h.qty;
+                        const holdingPositive = holdingPnl >= 0;
+                        return (
+                          <div key={i}>
+                            <div className="flex justify-between">
+                              <span>{h.symbol}</span>
+                              <span>{(h.qty / 1000).toFixed(2)}K</span>
+                            </div>
+                            <div className="flex justify-between" style={{ opacity: 0.7 }}>
+                              <span>
+                                {isChinese ? "均" : "avg"}${h.avgPrice.toFixed(1)} → $
+                                {currentPrice.toFixed(1)}
+                              </span>
+                              <span style={{ color: holdingPositive ? "#2d7a2d" : "#b91c1c" }}>
+                                {holdingPositive ? "+" : ""}
+                                {((holdingPnl / (h.qty * h.avgPrice)) * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Trades */}
                     <div
-                      className="text-center opacity-60"
-                      style={{ fontSize: isChinese ? "11px" : "7px" }}
+                      className="border-t pt-2"
+                      style={{ borderColor: "#b8a080", fontSize: baseFontSize }}
                     >
-                      {isChinese ? "暂无交易" : "No trades yet"}
+                      <h3 className="text-center font-bold mb-1" style={{ fontSize: headerSize }}>
+                        {isChinese ? "- 交易记录 -" : "- TRADES -"}
+                      </h3>
+                      {portfolio.trades.length > 0 ? (
+                        <div style={{ lineHeight: "1.8" }}>
+                          {portfolio.trades.map((t: any, i: number) => (
+                            <div key={i} className="mb-1">
+                              <div className="flex justify-between">
+                                <span style={{ fontWeight: "bold" }}>
+                                  {t.side} {t.symbol}
+                                </span>
+                                <span>{t.date}</span>
+                              </div>
+                              <div className="flex justify-between opacity-80">
+                                <span>×{t.qty.toLocaleString()}</span>
+                                <span>@${t.price}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div
+                          className="text-center opacity-60"
+                          style={{ fontSize: isChinese ? "11px" : "7px" }}
+                        >
+                          {isChinese ? "暂无交易" : "No trades yet"}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
+                );
+              })()}
             </div>
             {/* Close button */}
             <button

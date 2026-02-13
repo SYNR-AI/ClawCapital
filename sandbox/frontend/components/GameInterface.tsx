@@ -218,6 +218,7 @@ const GameInterface: React.FC = () => {
         scrollOpen={scrollOpen}
         onScrollToggle={setScrollOpen}
         portfolio={portfolio}
+        currentPrice={(msg as any).googPrice ?? 253}
       />
       {!scrollOpen && (
         <DeskSection onGreen={handleGreen} onRed={handleRed} disabled={buttonsDisabled} />
