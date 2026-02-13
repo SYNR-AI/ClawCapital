@@ -22,20 +22,17 @@ const WallSection: React.FC<WallSectionProps> = ({
   const isThinking = chatState === "sending" || chatState === "streaming";
 
   return (
-    <div className="relative h-[65%] w-full z-10 flex items-center justify-center pt-8">
-      {/* Frame / TV */}
-      <div className="relative w-[75%] aspect-[16/9] flex items-center justify-center overflow-hidden"></div>
-
-      {/* Lobster projected text */}
+    <div className="relative h-[65%] w-full z-10 flex items-center justify-center">
+      {/* Lobster projected text on projector screen */}
       {(displayText || isLoading) && (
         <div
-          className="absolute z-10 overflow-y-auto overscroll-contain px-[15%]"
+          className="absolute z-10 overflow-y-auto overscroll-contain px-[4%]"
           style={{
-            top: "27%",
+            top: "8%",
             left: "50%",
             transform: "translateX(-50%)",
-            width: "85%",
-            maxHeight: "36%",
+            width: "68%",
+            maxHeight: "68%",
             WebkitOverflowScrolling: "touch",
           }}
         >
@@ -63,11 +60,11 @@ const WallSection: React.FC<WallSectionProps> = ({
         style={{
           opacity: showBeam || isLoading ? 1 : 0,
           transition: "opacity 0.5s ease-in-out",
-          right: "10%",
-          bottom: "-2%",
-          width: "80%",
-          height: "60%",
-          clipPath: "polygon(88% 100%, 5% 0%, 60% 0%)",
+          right: "8%",
+          bottom: "-4%",
+          width: "85%",
+          height: "75%",
+          clipPath: "polygon(85% 100%, 10% 0%, 65% 0%)",
           background:
             "linear-gradient(to top left, rgba(255,200,80,0.4) 0%, rgba(255,220,130,0.12) 40%, rgba(255,230,150,0.03) 80%)",
           filter: "blur(3px)",
@@ -80,10 +77,10 @@ const WallSection: React.FC<WallSectionProps> = ({
         style={{
           opacity: showBeam || isLoading ? 0.8 : 0,
           transition: "opacity 0.5s ease-in-out",
-          right: "15%",
-          bottom: "-6%",
-          width: "10%",
-          height: "6%",
+          right: "14%",
+          bottom: "-8%",
+          width: "12%",
+          height: "7%",
           borderRadius: "50%",
           background: "radial-gradient(ellipse, rgba(255,210,100,0.7), transparent 70%)",
           filter: "blur(5px)",

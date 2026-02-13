@@ -10,7 +10,7 @@ interface DeskSectionProps {
 const DeskSection: React.FC<DeskSectionProps> = ({ onGreen, onRed, disabled }) => {
   return (
     <div className="relative h-[35%] w-full z-20 overflow-hidden">
-      <div className="absolute bottom-[32%] w-full flex justify-center">
+      <div className="absolute bottom-[40%] w-full flex justify-center">
         <Controls onGreen={onGreen} onRed={onRed} disabled={disabled} />
       </div>
     </div>

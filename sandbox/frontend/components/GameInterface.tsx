@@ -90,7 +90,7 @@ const GameInterface: React.FC = () => {
   return (
     <div className="relative w-full h-full flex flex-col no-select">
       <img
-        src="/background.png"
+        src="/background.jpeg"
         alt="Room Background"
         className="absolute inset-0 w-full h-full object-fill z-0 pointer-events-none"
         style={{ imageRendering: "pixelated" }}
