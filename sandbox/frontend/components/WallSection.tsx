@@ -110,9 +110,9 @@ const WallSection: React.FC<WallSectionProps> = ({
         alt="Scroll"
         className="absolute z-30 select-none cursor-pointer"
         style={{
-          left: "2%",
+          left: "4%",
           bottom: "11%",
-          width: "45%",
+          width: "40%",
           imageRendering: "pixelated",
         }}
         onClick={() => onScrollToggle(true)}
