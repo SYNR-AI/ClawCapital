@@ -223,24 +223,86 @@ const GameInterface: React.FC = () => {
         <DeskSection onGreen={handleGreen} onRed={handleRed} disabled={buttonsDisabled} />
       )}
 
-      {/* Time transition overlay */}
+      {/* Time transition overlay — spinning clock */}
       {transition && (
         <div
           className="absolute inset-0 z-40 flex flex-col items-center justify-center"
           style={{
             backgroundColor: "rgba(0,0,0,0.85)",
             animation: "transitionFade 1.5s ease-in-out",
+            paddingBottom: "20%",
           }}
         >
+          {/* Clock face */}
           <div
-            className="font-vt323 text-[#b8cc33] text-center"
+            className="relative rounded-full"
             style={{
-              textShadow: "0 0 8px rgba(184,204,51,0.6)",
-              animation: "transitionSlideUp 1.5s ease-in-out",
+              width: "100px",
+              height: "100px",
+              border: "3px solid #b8cc33",
+              boxShadow: "0 0 15px rgba(184,204,51,0.3)",
             }}
           >
-            <div className="text-[20px] tracking-[0.3em] opacity-70 mb-2">{transition.date}</div>
-            <div className="text-[48px] tracking-[0.2em] font-bold">{transition.time}</div>
+            {/* Hour ticks */}
+            {[...Array(12)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute"
+                style={{
+                  width: "2px",
+                  height: i % 3 === 0 ? "10px" : "5px",
+                  backgroundColor: "#b8cc33",
+                  top: "0",
+                  left: "50%",
+                  marginLeft: "-1px",
+                  transformOrigin: "center 50px",
+                  transform: `rotate(${i * 30}deg)`,
+                  opacity: i % 3 === 0 ? 1 : 0.4,
+                }}
+              />
+            ))}
+            {/* Hour hand */}
+            <div
+              className="absolute"
+              style={{
+                width: "3px",
+                height: "28px",
+                backgroundColor: "#b8cc33",
+                bottom: "50%",
+                left: "50%",
+                marginLeft: "-1.5px",
+                transformOrigin: "bottom center",
+                borderRadius: "2px",
+                animation: "hourSpin 1.5s linear",
+              }}
+            />
+            {/* Minute hand */}
+            <div
+              className="absolute"
+              style={{
+                width: "2px",
+                height: "38px",
+                backgroundColor: "#b8cc33",
+                bottom: "50%",
+                left: "50%",
+                marginLeft: "-1px",
+                transformOrigin: "bottom center",
+                borderRadius: "2px",
+                animation: "minuteSpin 1.5s linear",
+              }}
+            />
+            {/* Center dot */}
+            <div
+              className="absolute rounded-full"
+              style={{
+                width: "6px",
+                height: "6px",
+                backgroundColor: "#b8cc33",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+              }}
+            />
           </div>
         </div>
       )}
@@ -251,11 +313,13 @@ const GameInterface: React.FC = () => {
           75% { opacity: 1; }
           100% { opacity: 0; }
         }
-        @keyframes transitionSlideUp {
-          0% { opacity: 0; transform: translateY(20px); }
-          20% { opacity: 1; transform: translateY(0); }
-          75% { opacity: 1; transform: translateY(0); }
-          100% { opacity: 0; transform: translateY(-10px); }
+        @keyframes minuteSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(1080deg); }
+        }
+        @keyframes hourSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(180deg); }
         }
       `}</style>
 

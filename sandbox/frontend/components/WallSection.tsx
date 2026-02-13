@@ -224,7 +224,13 @@ const WallSection: React.FC<WallSectionProps> = ({
             </div>
             {/* Close button */}
             <button
-              className="mt-3 w-10 h-10 rounded-full bg-black/50 text-white/80 text-lg flex items-center justify-center active:bg-black/70"
+              className="mt-4 w-9 h-9 rounded-full flex items-center justify-center"
+              style={{
+                backgroundColor: "rgba(255,255,255,0.15)",
+                border: "1.5px solid rgba(255,255,255,0.3)",
+                color: "rgba(255,255,255,0.7)",
+                fontSize: "14px",
+              }}
               onClick={() => onScrollToggle(false)}
             >
               ✕
