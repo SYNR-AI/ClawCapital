@@ -6,6 +6,7 @@ import messages from "../messages.json";
 import initialPortfolio from "../portfolio.json";
 import { ANALYST_PROMPT } from "../prompts";
 import DeskSection from "./DeskSection";
+import SettlementOverlay from "./SettlementOverlay";
 import WallSection from "./WallSection";
 
 const isChinese = /^zh\b/i.test(navigator.language);
@@ -54,7 +55,14 @@ const GameInterface: React.FC = () => {
   const [scrollOpen, setScrollOpen] = useState(false);
   const [portfolio, setPortfolio] = useState<Portfolio>(initialPortfolio as Portfolio);
   const [pendingTrade, setPendingTrade] = useState<Trade | null>(null);
-  const [transition, setTransition] = useState<{ date: string; time: string } | null>(null);
+  const [transition, setTransition] = useState<{
+    date: string;
+    time: string;
+    label?: string;
+    duration: number;
+    hold?: boolean;
+  } | null>(null);
+  const [showSettlement, setShowSettlement] = useState(false);
 
   const msg = messages[messageIndex];
 
@@ -109,7 +117,7 @@ const GameInterface: React.FC = () => {
 
   const showTransitionThenSend = useCallback((index: number, feedback?: "agree" | "disagree") => {
     const m = messages[index];
-    setTransition({ date: m.date, time: m.time });
+    setTransition({ date: m.date, time: m.time, duration: 1500 });
     setTimeout(() => {
       setTransition(null);
       sendMessageRef.current(index, feedback);
@@ -123,9 +131,23 @@ const GameInterface: React.FC = () => {
 
   const advanceToNext = useCallback(
     (feedback: "agree" | "disagree") => {
-      const nextIdx = (messageIndexRef.current + 1) % messages.length;
-      setMessageIndex(nextIdx);
+      const currentIdx = messageIndexRef.current;
       setPendingTrade(null);
+
+      if (currentIdx >= messages.length - 1) {
+        // Last message — long transition then settlement
+        setPhase("idle");
+        const label = isChinese ? "一个月后..." : "ONE MONTH LATER...";
+        setTransition({ date: "2025-11-29", time: "", label, duration: 3500, hold: true });
+        setTimeout(() => {
+          setShowSettlement(true);
+          setTransition(null);
+        }, 3500);
+        return;
+      }
+
+      const nextIdx = currentIdx + 1;
+      setMessageIndex(nextIdx);
       showTransitionThenSend(nextIdx, feedback);
     },
     [showTransitionThenSend],
@@ -199,6 +221,17 @@ const GameInterface: React.FC = () => {
     advanceToNext("disagree");
   }, [phase, advanceToNext]);
 
+  const handlePlayAgain = useCallback(() => {
+    chat.clear();
+    setShowSettlement(false);
+    setShowIntro(true);
+    setIntroPage(0);
+    setMessageIndex(0);
+    setPortfolio(initialPortfolio as Portfolio);
+    setPendingTrade(null);
+    setPhase("idle");
+  }, [chat]);
+
   const buttonsDisabled = phase !== "awaiting_action" || showIntro;
 
   return (
@@ -230,7 +263,7 @@ const GameInterface: React.FC = () => {
           className="absolute inset-0 z-40 flex flex-col items-center justify-center"
           style={{
             backgroundColor: "rgba(0,0,0,0.85)",
-            animation: "transitionFade 1.5s ease-in-out",
+            animation: `${transition.hold ? "transitionFadeIn" : "transitionFade"} ${transition.duration}ms ease-in-out`,
             paddingBottom: "20%",
           }}
         >
@@ -274,7 +307,7 @@ const GameInterface: React.FC = () => {
                 marginLeft: "-1.5px",
                 transformOrigin: "bottom center",
                 borderRadius: "2px",
-                animation: "hourSpin 1.5s linear",
+                animation: `hourSpin ${transition.duration}ms linear`,
               }}
             />
             {/* Minute hand */}
@@ -289,7 +322,7 @@ const GameInterface: React.FC = () => {
                 marginLeft: "-1px",
                 transformOrigin: "bottom center",
                 borderRadius: "2px",
-                animation: "minuteSpin 1.5s linear",
+                animation: `minuteSpin ${transition.duration}ms linear`,
               }}
             />
             {/* Center dot */}
@@ -305,6 +338,22 @@ const GameInterface: React.FC = () => {
               }}
             />
           </div>
+          {/* Label below clock */}
+          {transition.label && (
+            <div
+              className={isChinese ? "mt-6" : "mt-6 font-press-start"}
+              style={{
+                color: "#b8cc33",
+                fontSize: isChinese ? "18px" : "13px",
+                fontFamily: isChinese ? "system-ui, -apple-system, sans-serif" : undefined,
+                fontWeight: isChinese ? 600 : undefined,
+                textShadow: "0 0 8px rgba(184,204,51,0.4)",
+                letterSpacing: isChinese ? "0.1em" : "0.15em",
+              }}
+            >
+              {transition.label}
+            </div>
+          )}
         </div>
       )}
       <style>{`
@@ -314,15 +363,30 @@ const GameInterface: React.FC = () => {
           75% { opacity: 1; }
           100% { opacity: 0; }
         }
+        @keyframes transitionFadeIn {
+          0% { opacity: 0; }
+          15% { opacity: 1; }
+          100% { opacity: 1; }
+        }
         @keyframes minuteSpin {
           from { transform: rotate(0deg); }
-          to { transform: rotate(1080deg); }
+          to { transform: rotate(2160deg); }
         }
         @keyframes hourSpin {
           from { transform: rotate(0deg); }
-          to { transform: rotate(180deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
+
+      {/* Settlement overlay */}
+      {showSettlement && (
+        <SettlementOverlay
+          portfolio={portfolio}
+          settlementPrice={(messages[messages.length - 1] as any).googPrice ?? 272.3}
+          isChinese={isChinese}
+          onPlayAgain={handlePlayAgain}
+        />
+      )}
 
       {/* Intro modal — paginated */}
       {showIntro && (

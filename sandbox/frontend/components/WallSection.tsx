@@ -53,8 +53,8 @@ const WallSection: React.FC<WallSectionProps> = ({
           <span
             className={
               isChinese
-                ? "text-[16px] sm:text-[16px] leading-relaxed select-none text-left"
-                : "font-press-start text-[10px] sm:text-[10px] leading-relaxed tracking-wide select-none text-left"
+                ? "text-[16px] leading-relaxed select-none text-left"
+                : "font-press-start text-[10px] leading-relaxed tracking-wide select-none text-left"
             }
             style={{
               ...(isChinese && {

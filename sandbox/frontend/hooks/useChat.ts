@@ -10,6 +10,7 @@ export interface Chat {
   chatState: ChatState;
   error: string | null;
   send: (message: string, systemPrompt?: string) => void;
+  clear: () => void;
 }
 
 function extractText(message: any): string {
@@ -106,5 +107,11 @@ export function useChat(gateway: Gateway): Chat {
     [gateway, chatState],
   );
 
-  return { reply, chatState, error, send };
+  const clear = useCallback(() => {
+    setReply("");
+    setChatState("idle");
+    setError(null);
+  }, []);
+
+  return { reply, chatState, error, send, clear };
 }
