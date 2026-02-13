@@ -54,6 +54,7 @@ const GameInterface: React.FC = () => {
   const [scrollOpen, setScrollOpen] = useState(false);
   const [portfolio, setPortfolio] = useState<Portfolio>(initialPortfolio as Portfolio);
   const [pendingTrade, setPendingTrade] = useState<Trade | null>(null);
+  const [transition, setTransition] = useState<{ date: string; time: string } | null>(null);
 
   const msg = messages[messageIndex];
 
@@ -106,17 +107,29 @@ const GameInterface: React.FC = () => {
     }
   }, [chat.chatState, phase, chat.reply]);
 
+  const showTransitionThenSend = useCallback((index: number, feedback?: "agree" | "disagree") => {
+    const m = messages[index];
+    setTransition({ date: m.date, time: m.time });
+    setTimeout(() => {
+      setTransition(null);
+      sendMessageRef.current(index, feedback);
+    }, 1500);
+  }, []);
+
   const handleStart = () => {
     setShowIntro(false);
-    sendMessageRef.current(0);
+    showTransitionThenSend(0);
   };
 
-  const advanceToNext = useCallback((feedback: "agree" | "disagree") => {
-    const nextIdx = (messageIndexRef.current + 1) % messages.length;
-    setMessageIndex(nextIdx);
-    setPendingTrade(null);
-    sendMessageRef.current(nextIdx, feedback);
-  }, []);
+  const advanceToNext = useCallback(
+    (feedback: "agree" | "disagree") => {
+      const nextIdx = (messageIndexRef.current + 1) % messages.length;
+      setMessageIndex(nextIdx);
+      setPendingTrade(null);
+      showTransitionThenSend(nextIdx, feedback);
+    },
+    [showTransitionThenSend],
+  );
 
   const executeTrade = useCallback((trade: Trade) => {
     const currentMsg = messages[messageIndexRef.current] as any;
@@ -209,6 +222,42 @@ const GameInterface: React.FC = () => {
       {!scrollOpen && (
         <DeskSection onGreen={handleGreen} onRed={handleRed} disabled={buttonsDisabled} />
       )}
+
+      {/* Time transition overlay */}
+      {transition && (
+        <div
+          className="absolute inset-0 z-40 flex flex-col items-center justify-center"
+          style={{
+            backgroundColor: "rgba(0,0,0,0.85)",
+            animation: "transitionFade 1.5s ease-in-out",
+          }}
+        >
+          <div
+            className="font-vt323 text-[#b8cc33] text-center"
+            style={{
+              textShadow: "0 0 8px rgba(184,204,51,0.6)",
+              animation: "transitionSlideUp 1.5s ease-in-out",
+            }}
+          >
+            <div className="text-[20px] tracking-[0.3em] opacity-70 mb-2">{transition.date}</div>
+            <div className="text-[48px] tracking-[0.2em] font-bold">{transition.time}</div>
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes transitionFade {
+          0% { opacity: 0; }
+          15% { opacity: 1; }
+          75% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+        @keyframes transitionSlideUp {
+          0% { opacity: 0; transform: translateY(20px); }
+          20% { opacity: 1; transform: translateY(0); }
+          75% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-10px); }
+        }
+      `}</style>
 
       {/* Intro modal — paginated */}
       {showIntro && (
